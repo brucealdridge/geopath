@@ -11,7 +11,7 @@
  * Plugin Name:       GeoPath Post
  * Plugin URI:        https://github.com/brucealdridge/geopath-post
  * Description:       Adds [geopath] and [geopoint] shortcodes which grab location data from Owntracks and display it on a map.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Requires at least: 6.4
  * Requires PHP:      7.4
  * Author:            Bruce Aldridge
@@ -328,7 +328,7 @@ class GeoPathPost {
 			array(
 				'show_in_rest' => true,
 				'single'       => true,
-				'default'      => 12,
+				'default'      => '12',
 				'type'         => 'string',
 				'description'      => 'zoom level',
 			)
