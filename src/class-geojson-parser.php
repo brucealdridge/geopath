@@ -34,6 +34,9 @@ class geojson_parser {
 	public function get_last_location() {
 		// this assumes that we have a linestring GEOJSON format
 		$coordinates = $this->find_all_coords();
+		if ( [] === $coordinates ) {
+			throw new \Exception('no location found');
+		}
 		$last = end( $coordinates );
 		[$lon, $lat] = $last;
 		
@@ -44,8 +47,7 @@ class geojson_parser {
 		];
 	}
 
-	public function find_all_coords()
-	{
+	public function find_all_coords(): array {
 		$minimum_accuracy = $this->settings->get('geojson', 'min_accuracy');
 		if ($this->geojson->features ?? null) {
 			$coords = [];
@@ -64,7 +66,7 @@ class geojson_parser {
 
 			return $coords;
 		}
-		return $this->geojson->geometry->coordinates;
+		return $this->geojson->geometry->coordinates ?? [];
 	}
 
 	public function find_center_point()

@@ -11,7 +11,7 @@
  * Plugin Name:       GeoPath Post
  * Plugin URI:        https://github.com/brucealdridge/geopath-post
  * Description:       Adds [geopath] and [geopoint] shortcodes which grab location data from Owntracks and display it on a map.
- * Version:           1.0.1
+ * Version:           1.0.2
  * Requires at least: 6.4
  * Requires PHP:      7.4
  * Author:            Bruce Aldridge
@@ -139,12 +139,11 @@ class GeoPathPost {
 
 		if ( (! str_starts_with($expected_start, $start_date) && $start_date !== null)
 			|| !str_starts_with($expected_end, $end_date) ) {
-			return ['boo'];
+			return [];
 		}
 
 		$meta = [
 			self::META_PREFIX . 'end' => $end_date,
-			self::META_PREFIX . 'last_update' => date('Y-m-d H:i:s'),
 		];
 		if ($start_date !== null) {
 			$meta[self::META_PREFIX . 'start'] = $start_date;
@@ -159,12 +158,13 @@ class GeoPathPost {
 
 		$end_time = new \DateTime( $end_date, $timezone );
 		$owntracks = new \geopath\owntracks(
-			$this->settings->get('owntracks', 'server_url'),
+			$this->settings->get('owntracks', 'api_url'),
 			$this->settings->get('owntracks', 'user'),
 			$this->settings->get('owntracks', 'device')
 		);
+
 		if ( $start_date !== null ) {
-			// grab the linestring from owntracks
+
 			$start_time = new \DateTime( $start_date, $timezone );
 
 			try {
@@ -178,6 +178,7 @@ class GeoPathPost {
 				$location = $parser->get_last_location();
 				$center = $parser->find_center_point();
 				$zoom = $parser->find_approriate_zoom();
+				$meta['map_zoom'] = $zoom;
 
 			} catch ( \Exception $e ) {
 				// if there is an error, we can log it and return, nothing else we can do
@@ -373,12 +374,14 @@ class GeoPathPost {
 		wp_enqueue_script('mapbox-gl-js');
 
 		if ( $geojson ) {
+			/*
 			$this->load_dependencies();
 			$parser = new \geopath\geojson_parser( $geojson, $this->settings );
 			$center = $parser->find_center_point();
 			$lon = $center['latitude'];
 			$lat = $center['longitude'];
 			$map_zoom = $map_zoom ?: $parser->find_approriate_zoom();
+			*/
 			$geojson = json_decode( $geojson );
 		}
 
@@ -395,7 +398,7 @@ class GeoPathPost {
 		if ( $geojson ) {
 			$data['geojson'] = $geojson;
 		}
-		wp_enqueue_script( 'my-mapbox-init', plugins_url( '/js/mapbox-init.js', __FILE__ ), array( 'mapbox-gl-js' ), '1.0.4', true );
+		wp_enqueue_script( 'my-mapbox-init', plugins_url( '/js/mapbox-init.js', __FILE__ ), array( 'mapbox-gl-js' ), '1.0.2', true );
 		wp_localize_script( 'my-mapbox-init', 'mapbox_' . $map_id, $data );
 
 		return '<div id="'. $map_id .'" style="width: 100%; height: 400px;"></div>
