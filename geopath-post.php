@@ -404,7 +404,7 @@ class GeoPathPost {
 		return '<div id="'. $map_id .'" style="width: 100%; height: 400px;"></div>
 <div style="text-align: center; display: flex; align-items: center; justify-content: center; gap: 20px;">
     <div>
-        <p style="font-size: 1.1em; font-weight: bold; margin-bottom: 0; margin-right: 20px;">'. $location .'</p>
+        <p style="font-size: 1.1em; font-weight: bold; margin-right: 20px;">'. $location .'</p>
     </div>
     <div>
         <span style="font-size: 2em; margin: 0;">
