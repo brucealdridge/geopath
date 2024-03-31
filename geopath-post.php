@@ -30,11 +30,16 @@ class GeoPathPost {
 	private \geopath\settings $settings;
 
 	public function __construct() {
-		add_shortcode('geopath', array($this, 'geopath_shortcode'));
-		add_shortcode('geopoint', array($this, 'geopoint_shortcode'));
 
-		add_action ('init', [$this, 'register_meta']);
+		add_action ('init', [$this, 'init']);
 		add_action('wp_enqueue_scripts', [$this, 'load_assets']);
+		add_action('rest_api_init', function () {
+			register_rest_route('geopath', '/location', array(
+				'methods' => 'GET',
+				'callback' => [$this, 'rest_api'],
+				'permission_callback' => [$this, 'rest_permission_callback'],
+			));
+		});
 
 		if ( class_exists('WP_CLI') ) {
 			$this->register_cli_command();
@@ -51,79 +56,22 @@ class GeoPathPost {
 		require_once plugin_dir_path( __FILE__ ) . 'src/class-area-lookup.php';
 	}
 
-	/**
-	 * The shortcode callback function
-	 *
-	 * @param array $atts The attributes passed to the shortcode
-	 * @return string The content to display where the shortcode is used
-	 */
-	public function geopath_shortcode( $atts ) {
-		global $post;
-
-		// Ensure the global $post variable is set (if within The Loop)
-		if (!$post) {
-			return '';
+	public function rest_permission_callback () {
+		// Restrict endpoint to only users who have the edit_posts capability.
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			return new WP_Error( 'rest_forbidden', esc_html__( 'OMG you can not view private data.', 'my-text-domain' ), array( 'status' => 401 ) );
 		}
 
-		// Extract the attributes passed to the shortcode
-		$attributes = shortcode_atts(array(
-			'start' => '',
-			'end' => '',
-		), $atts);
-
-		$start_date = get_post_meta($post->ID, self::META_PREFIX.'start', true);
-		$end_date = get_post_meta($post->ID, self::META_PREFIX.'end', true);
-		if (! $start_date || ! $end_date ) {
-
-			// and we need to refresh the cached data
-			$meta = $this->get_meta( $attributes['start'], $attributes['end'] );
-			foreach( $meta as $key => $value ) {
-				update_post_meta( $post->ID, $key, $value );
-			}
-		}
-
-		// You can return something here if you want to display something on the page where the shortcode is used.
-		// For simply updating post meta without displaying anything, just return an empty string.
-		return $this->render_shortcode( $post->ID );
+		// This is a black-listing approach. You could alternatively do this via white-listing, by returning false here and changing the permissions check.
+		return true;
 	}
+	public function rest_api() {
 
+		$start = $_GET['start'] === '' ? null : $_GET['start'];
+		$meta = $this->get_meta( $start , $_GET['end'] );
 
-	/**
-	 * The shortcode callback function
-	 *
-	 * @param array $atts The attributes passed to the shortcode
-	 * @return string The content to display where the shortcode is used
-	 */
-	public function geopoint_shortcode( $atts ) {
-		global $post;
-
-		// Ensure the global $post variable is set (if within The Loop)
-		if (!$post) {
-			return '';
-		}
-
-		// Extract the attributes passed to the shortcode
-		$attributes = shortcode_atts(array(
-			'date' => '',
-		), $atts);
-
-
-		$end_date = get_post_meta($post->ID, self::META_PREFIX.'end', true);
-		if ( ! $end_date ) {
-
-			// and we need to refresh the cached data
-			$meta = $this->get_meta( null, $attributes['date'] );
-			foreach( $meta as $key => $value ) {
-				update_post_meta( $post->ID, $key, $value );
-			}
-		}
-
-		// You can return something here if you want to display something on the page where the shortcode is used.
-		// For simply updating post meta without displaying anything, just return an empty string.
-		return $this->render_shortcode( $post->ID );
+		return new WP_REST_Response( $meta, 200 );
 	}
-
-
 
 	/**
 	 * @param ?string $start_date
@@ -143,10 +91,10 @@ class GeoPathPost {
 		}
 
 		$meta = [
-			self::META_PREFIX . 'end' => $end_date,
+			'end' => $end_date,
 		];
 		if ($start_date !== null) {
-			$meta[self::META_PREFIX . 'start'] = $start_date;
+			$meta['start'] = $start_date;
 		}
 
 		// convert them to a timestamp based on the timezone of the site
@@ -172,13 +120,13 @@ class GeoPathPost {
 
 				$parser   = new \geopath\geojson_parser( $geojson, $this->settings );
 
-				$meta['geojson'] = $parser->convert_to_linestring();
+				$meta['geoJson'] = $parser->convert_to_linestring();
 
 				// now we can parse the geojson and get the weather data
 				$location = $parser->get_last_location();
 				$center = $parser->find_center_point();
 				$zoom = $parser->find_approriate_zoom();
-				$meta['map_zoom'] = $zoom;
+				$meta['mapZoom'] = $zoom;
 
 			} catch ( \Exception $e ) {
 				// if there is an error, we can log it and return, nothing else we can do
@@ -200,6 +148,7 @@ class GeoPathPost {
 				$parser = new \geopath\geojson_parser( $geojson, $this->settings );
 				$location = $parser->get_location_at_time( $end_time->getTimestamp() );
 				$center = $location;
+				$meta['poi'] = $location['longitude'].', '.$location['latitude'];
 			} catch ( \Exception $e ) {
 				// if there is an error, we can log it and return, nothing else we can do without location data
 				error_log( $e->getMessage() );
@@ -209,14 +158,14 @@ class GeoPathPost {
 		}
 		if (is_array($center) && array_key_exists('latitude', $location) ) {
 			// save the center point of the location for the rendering of the map
-			$meta['location_geo'] =  $location['longitude'].', '.$location['latitude'];
+			$meta['locationCoords'] =  $location['longitude'].', '.$location['latitude'];
 		}
 
 		try {
 			$lookup     = new \geopath\area_lookup();
 			$place_name = $lookup->get_area( $location['latitude'], $location['longitude'] );
 			// we use the POI or the endpoint of the linestring to get the location name
-			$meta['location'] = $place_name;
+			$meta['locationName'] = $place_name;
 
 		} catch (\Exception $e) {
 			// if there is an error, we can log it
@@ -229,9 +178,9 @@ class GeoPathPost {
 			// weather is requested based on either the POI or the endpoint of the linestring
 			$weather   = $openmeteo->request( $location['longitude'], $location['latitude'], $end_time->getTimestamp() );
 
-			$meta['weather_icon'] = $weather['conditions']['icon'];
-			$meta['weather_description'] = $weather['conditions']['description'];
-			$meta['weather_temperature'] = $weather['apparent_temperature'];
+			$meta['weatherSlug'] = $weather['conditions']['icon'];
+			$meta['weather'] = $weather['conditions']['description'];
+			$meta['temperature'] = $weather['apparent_temperature'];
 		} catch (\Exception $e) {
 			// if there is an error, we can log it
 			error_log( $e->getMessage() );
@@ -291,133 +240,14 @@ class GeoPathPost {
 		);
 	}
 
-	public function register_meta()
+	public function init()
 	{
-		register_meta(
-			'post',
-			'weather_icon',
-			array(
-				'show_in_rest' => true,
-				'single'       => true,
-				'type'         => 'string',
-				'description'      => 'weather icon'
-			)
+		register_block_type(
+			__DIR__ . '/build'
 		);
-		register_meta(
-			'post',
-			'weather_description',
-			array(
-				'show_in_rest' => true,
-				'single'       => true,
-				'type'         => 'string',
-				'description'      => 'Weather conditions',
-			)
-		);
-		register_meta(
-			'post',
-			'weather_temperature',
-			array(
-				'show_in_rest' => true,
-				'single'       => true,
-				'type'         => 'string',
-				'description'      => 'Temperature in C',
-			)
-		);
-		register_meta(
-			'post',
-			'map_zoom',
-			array(
-				'show_in_rest' => true,
-				'single'       => true,
-				'default'      => '12',
-				'type'         => 'string',
-				'description'      => 'zoom level',
-			)
-		);
-		register_meta(
-			'post',
-			'geojson',
-			array(
-				'show_in_rest' => true,
-				'single'       => true,
-				'type'         => 'string',
-				'description'      => 'Raw GEOJSON data',
-			)
-		);
-		register_meta(
-			'post',
-			'location',
-			array(
-				'show_in_rest' => true,
-				'single'       => true,
-				'type'         => 'string',
-				'description'      => 'Location',
-			)
-		);
+
 	}
 
-	private function render_shortcode( int $ID ) {
-		$weather_img = plugins_url('/weather-icons/', __FILE__).$this->icon_style.'/'.get_post_meta( $ID, 'weather_icon', true ).$this->icon_format;
-		$weather_description = get_post_meta( $ID, 'weather_description', true );
-		$weather_temperature = get_post_meta( $ID, 'weather_temperature', true );
-		$map_zoom = get_post_meta( $ID, 'map_zoom', true );
-		$location = get_post_meta( $ID, 'location', true );
-		$geo_location = get_post_meta( $ID, 'location_geo', true );
-		if ($geo_location ) {
-			[ $lat, $lon ] = explode( ',', get_post_meta( $ID, 'location_geo', true ) );
-		}
-		$geojson = get_post_meta( $ID, 'geojson', true );
-
-		$map_id = 'geopath_map_'. $ID;
-
-		wp_enqueue_style('mapbox-gl-css');
-		wp_enqueue_script('mapbox-gl-js');
-
-		if ( $geojson ) {
-			/*
-			$this->load_dependencies();
-			$parser = new \geopath\geojson_parser( $geojson, $this->settings );
-			$center = $parser->find_center_point();
-			$lon = $center['latitude'];
-			$lat = $center['longitude'];
-			$map_zoom = $map_zoom ?: $parser->find_approriate_zoom();
-			*/
-			$geojson = json_decode( $geojson );
-		}
-
-		if ( ! isset($lat) ) {
-			return '';
-		}
-		$data = [
-			'accessToken' => $this->settings->get('mapbox', 'token'),
-			'mapStyle'    => $this->settings->get('mapbox', 'style'),
-			'container'   => $map_id, // Pass the unique ID
-			'center'      => [ $lat, $lon ],
-			'zoom'        => $map_zoom ?: 12
-		];
-		if ( $geojson ) {
-			$data['geojson'] = $geojson;
-		}
-		wp_enqueue_script( 'my-mapbox-init', plugins_url( '/js/mapbox-init.js', __FILE__ ), array( 'mapbox-gl-js' ), '1.0.2', true );
-		wp_localize_script( 'my-mapbox-init', 'mapbox_' . $map_id, $data );
-
-		return '<div id="'. $map_id .'" style="width: 100%; height: 400px;"></div>
-<div style="text-align: center; display: flex; align-items: center; justify-content: center; gap: 20px;">
-    <div>
-        <p style="font-size: 1.1em; font-weight: bold; margin-right: 20px;">'. $location .'</p>
-    </div>
-    <div>
-        <span style="font-size: 2em; margin: 0;">
-        	<img src="'. $weather_img .'" alt="'. $weather_description .'" style=" height: 1.6em; float: left; margin-right: 10px" >
-        '. $weather_temperature .'°C
-        </span>
-    </div>
-    <div>
-        <p style="margin: 0;">'. $weather_description .'</p>
-    </div>
-</div>
-';
-	}
 	public function load_assets()
 	{
 		wp_register_style('mapbox-gl-css', 'https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.css', array(), '3.2.0');
@@ -426,3 +256,24 @@ class GeoPathPost {
 
 }
 new GeoPathPost();
+
+
+function geopath_add_inline_block_editor_data() {
+	// Register the script
+	wp_register_script('geopath-block-custom-block-editor-script', plugins_url('script.js', __FILE__), array(), '1.0', true);
+
+	// Get the API token
+	$api_token = get_option('geopath_mapbox_token');
+
+	// Add inline script
+	$script = sprintf(
+		'var geoPath = { mapboxToken: "%s" };',
+		esc_js($api_token)
+	);
+	wp_add_inline_script('geopath-block-custom-block-editor-script', $script, 'before');
+
+	// Enqueue the script
+	wp_enqueue_script('geopath-block-custom-block-editor-script');
+}
+add_action('wp_enqueue_scripts', 'geopath_add_inline_block_editor_data');
+add_action('admin_enqueue_scripts', 'geopath_add_inline_block_editor_data');

@@ -1,14 +1,19 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Loop over each mapbox instance data
+    if ( !window.geoPath) {
+        return;
+    }
     for (let key in window) {
-        if (key.startsWith('mapbox_')) {
+        if (key.startsWith('geopath_map_')) {
             let mapData = window[key];
             mapboxgl.accessToken = mapData.accessToken;
             const map = new mapboxgl.Map({
                 container: mapData.container, // Use the unique container ID
                 style: 'mapbox://styles/mapbox/streets-v12',
                 center: mapData.center, // starting position ([lng, lat] for Mombasa, Kenya)
-                zoom: mapData.zoom // starting zoom
+                zoom: mapData.zoom,
+                pitch: mapData.pitch ?? 0,
+                bearing: mapData.bearing ?? 0
             });
 
             map.on('load', () => {
@@ -44,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const marker = new mapboxgl.Marker({
                         'color': '#314ccd'
                     });
-                    marker.setLngLat(mapData.center).addTo(map);
+                    marker.setLngLat(mapData.poi).addTo(map);
                 }
 
             });

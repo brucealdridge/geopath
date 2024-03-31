@@ -1,0 +1,66 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "geopath/map-block",
+  "version": "0.1.0",
+  "title": "GeoPath",
+  "category": "widgets",
+  "description": "Display a map with a marker or a route",
+  "example": {},
+  "attributes": {
+    "start": {
+      "type": "string"
+    },
+    "end": {
+      "type": "string"
+    },
+    "isPath": {
+      "type": "boolean"
+    },
+    "geoJson": {
+      "type": "string"
+    },
+    "locationName": {
+      "type": "string"
+    },
+    "locationCoords": {
+      "type": "string"
+    },
+    "weather": {
+      "type": "string"
+    },
+    "weatherSlug": {
+      "type": "string"
+    },
+    "temperature": {
+      "type": "string"
+    },
+    "mapZoom": {
+      "type": "string"
+    },
+    "mapCenter": {
+      "type": "string"
+    },
+    "mapPitch": {
+      "type": "string"
+    },
+    "mapBearing": {
+      "type": "string"
+    }
+  },
+  "supports": {
+    "color": {
+      "background": false,
+      "text": true
+    },
+    "html": false,
+    "typography": {
+      "fontSize": true
+    }
+  },
+  "textdomain": "geopath",
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css",
+  "render": "file:./render.php"
+}

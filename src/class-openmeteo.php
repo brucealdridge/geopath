@@ -13,10 +13,15 @@ class openmeteo {
 	 */
 	public function request( $lon, $lat, $timestamp ) {
 		$date = gmdate( 'Y-m-d', $timestamp);
-		// make a get request to get the historical weather for the timestamp for the location from open-meteo.com
-		$response = wp_remote_get( "https://archive-api.open-meteo.com/v1/archive?latitude=$lat&longitude=$lon&start_date=$date&end_date=$date&hourly=temperature_2m,relative_humidity_2m,dew_point_2m,apparent_temperature,precipitation,rain,weather_code,is_day" );
-		// the response is a json object with the weather data, we can return the output directly
+		// we can only use the archive if the date is at least 5 days in the past
+		if ( strtotime( $date ) < strtotime( '-6 days' ) ) {
+			$url = "https://archive-api.open-meteo.com/v1/archive?latitude=$lat&longitude=$lon&start_date=$date&end_date=$date&hourly=temperature_2m,relative_humidity_2m,dew_point_2m,apparent_temperature,precipitation,rain,weather_code,is_day";
+		} else {
+			$url = "https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&past_days=7&forecast_days=1&hourly=temperature_2m,relative_humidity_2m,dew_point_2m,apparent_temperature,precipitation,rain,weather_code,is_day";
+		}
 
+		$response = wp_remote_get( $url );
+		// make a get request to get the historical weather for the timestamp for the location from open-meteo.com
 
 		$response = json_decode( wp_remote_retrieve_body($response), true );
 
