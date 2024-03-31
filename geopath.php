@@ -1,27 +1,27 @@
 <?php
 /**
- * GeoPath Post
+ * GeoPath
  *
- * @package           GeoPath Post
+ * @package           GeoPath
  * @author            brucealdridge
  * @copyright         2024
  * @license           GPL-2.0-or-later
  *
  * @wordpress-plugin
- * Plugin Name:       GeoPath Post
- * Plugin URI:        https://github.com/brucealdridge/geopath-post
- * Description:       Adds [geopath] and [geopoint] shortcodes which grab location data from Owntracks and display it on a map.
- * Version:           1.0.2
+ * Plugin Name:       GeoPath
+ * Plugin URI:        https://github.com/brucealdridge/geopath
+ * Description:       Adds geopath block type which grabs location data from Owntracks and display it on a map.
+ * Version:           1.1.0
  * Requires at least: 6.4
  * Requires PHP:      7.4
  * Author:            Bruce Aldridge
  * Author URI:        https://brucealdridge.com
- * GitHub Plugin URI: https://github.com/brucealdridge/geopath-post
+ * GitHub Plugin URI: https://github.com/brucealdridge/geopath
  * License:           GPL v2 or later
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  */
 
-class GeoPathPost {
+class GeoPath {
 	public const META_PREFIX = '_geopath_';
 
 	private $icon_style = 'svg'; // either svg,svg-static or png
@@ -41,9 +41,6 @@ class GeoPathPost {
 			));
 		});
 
-		if ( class_exists('WP_CLI') ) {
-			$this->register_cli_command();
-		}
 		require plugin_dir_path( __FILE__ ) . 'src/class-settings.php';
 		$this->settings = new \geopath\settings();
 
@@ -189,57 +186,6 @@ class GeoPathPost {
 		return $meta;
 	}
 
-	private function register_cli_command() {
-		// these commands are just used for testing
-
-		WP_CLI::add_command(
-			'geopath',
-			function ($args, $assoc_args) {
-				date_default_timezone_set( get_option( 'timezone_string' ) ); // this is not set by default on CLI it seems.
-				$meta = $this->get_meta($assoc_args['start'], $assoc_args['end']);
-				WP_CLI::success( 'Meta data' );
-				WP_CLI::success( json_encode( $meta, JSON_PRETTY_PRINT ) );
-			},
-			[
-				'shortdesc' => 'Get the meta data for a post',
-				'synopsis' => [
-					[
-						'type' => 'assoc',
-						'name' => 'start',
-						'description' => 'The start date and time in the format Y-m-d\TH:i:s',
-						'optional' => false,
-					],
-					[
-						'type' => 'assoc',
-						'name' => 'end',
-						'description' => 'The end date and time in the format Y-m-d\TH:i:s',
-						'optional' => false,
-					],
-				],
-			]
-		);
-		WP_CLI::add_command(
-			'geopoint',
-			function ($args, $assoc_args) {
-				date_default_timezone_set( get_option( 'timezone_string' ) ); // this is not set by default on CLI it seems.
-				$meta = $this->get_meta(null, $assoc_args['date']);
-				WP_CLI::success( 'Meta data' );
-				WP_CLI::success( json_encode( $meta, JSON_PRETTY_PRINT ) );
-			},
-			[
-				'shortdesc' => 'Get the meta data for a post',
-				'synopsis' => [
-					[
-						'type' => 'assoc',
-						'name' => 'date',
-						'description' => 'The date and time in the format Y-m-d H:i:s',
-						'optional' => false,
-					],
-				],
-			]
-		);
-	}
-
 	public function init()
 	{
 		register_block_type(
@@ -255,7 +201,7 @@ class GeoPathPost {
 	}
 
 }
-new GeoPathPost();
+new GeoPath();
 
 
 function geopath_add_inline_block_editor_data() {

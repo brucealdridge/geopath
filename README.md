@@ -1,4 +1,4 @@
-## GeoPath Post
+## GeoPath
 
 
 ### Description
