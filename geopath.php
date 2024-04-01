@@ -177,7 +177,7 @@ class GeoPath {
 
 			$meta['weatherSlug'] = $weather['conditions']['icon'];
 			$meta['weather'] = $weather['conditions']['description'];
-			$meta['temperature'] = $weather['apparent_temperature'];
+			$meta['temperature'] = (string) $weather['apparent_temperature'];
 		} catch (\Exception $e) {
 			// if there is an error, we can log it
 			error_log( $e->getMessage() );

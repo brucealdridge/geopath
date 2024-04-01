@@ -255,7 +255,7 @@ function Edit({attributes, setAttributes}) {
                         onChange={(value) => setAttributes({locationName: value})}
                     />
                     <TextControl
-                        label={__('Map Cebter', 'geopath')}
+                        label={__('Map Center', 'geopath')}
                         value={mapCenter}
                         onChange={(value) => setAttributes({mapCenter: value})}
                     />
