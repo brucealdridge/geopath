@@ -25,6 +25,10 @@ class area_lookup {
 
 		if (isset($address->town)) {
 			$location .= $address->town;
+		} elseif (isset($address->city)) {
+			$location .= $address->city;
+		} elseif (isset($address->locality)) {
+			$location .= $address->locality;
 		}
 
 		if ($address->country_code === 'us' && isset($address->state)) {

@@ -33,6 +33,7 @@ class GeoPath {
 
 		add_action ('init', [$this, 'init']);
 		add_action('wp_enqueue_scripts', [$this, 'load_assets']);
+		add_action('admin_enqueue_scripts', [$this, 'load_admin_assets']);
 		add_action('rest_api_init', function () {
 			register_rest_route('geopath', '/location', array(
 				'methods' => 'GET',
@@ -198,6 +199,11 @@ class GeoPath {
 	{
 		wp_register_style('mapbox-gl-css', 'https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.css', array(), '3.2.0');
 		wp_register_script('mapbox-gl-js', 'https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.js', array(), '3.2.0');
+	}
+	public function load_admin_assets()
+	{
+		wp_register_style('mapbox-gl-css', 'https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.css', array(), '3.2.0');
+		wp_enqueue_style('mapbox-gl-css');
 	}
 
 }

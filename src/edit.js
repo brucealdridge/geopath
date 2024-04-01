@@ -11,10 +11,8 @@ import {
     TextareaControl,
 } from '@wordpress/components';
 import mapboxgl from '!mapbox-gl';
-import {useState, useEffect, useRef} from '@wordpress/element';
+import {useEffect, useRef} from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
-import {debounce} from 'lodash';
-
 
 function Edit({attributes, setAttributes}) {
     // Destructure attributes
@@ -38,7 +36,6 @@ function Edit({attributes, setAttributes}) {
     const map = useRef(null);
 
     let mapLayer = null;
-    let mapSource = null;
     let mapMarker = null;
 
     const refreshMapData = () => {
@@ -78,23 +75,19 @@ function Edit({attributes, setAttributes}) {
                 map.current.removeLayer('LineString');
             }
             const markerCoords = locationCoords.split(',').map(coord => parseFloat(coord.trim()));
-            console.log( 'markerCoords', markerCoords );
             if ( mapMarker ) {
-                mapMarker.setLngLat( markerCoords );
-                mapMarker.addTo(map.current);
-            } else {
+                mapMarker.remove();
+            }
                 mapMarker = new mapboxgl.Marker({
                     'color': '#314ccd'
                 });
                 mapMarker.setLngLat( markerCoords ).addTo(map.current);
-            }
         }
     };
 
     useEffect(() => {
         if (window.geoPath && window.geoPath.mapboxToken) {
             mapboxgl.accessToken = window.geoPath.mapboxToken;
-            console.log('initialized mapbox');
             // Initialize your Mapbox map or other logic here
         } else {
             console.error('No Mapbox token found. Please add your token');
@@ -107,17 +100,9 @@ function Edit({attributes, setAttributes}) {
         const pitch = parseFloat(mapPitch || 0);
         const bearing = parseFloat(mapBearing || 0);
 
-        console.log(`Parsed locationCoords: ${lng}, ${lat}`); // Debugging line
-        console.log(`Parsed mapZoom: ${zoom}`); // Debugging line
+
 
         if (map.current) {
-            // Update map center and zoom if map already exists
-            //   console.log('Setting Center to ', [lng, lat]);
-            //   console.log('Setting zoom to ', zoom);
-            //   console.log('Setting pitch to ', pitch);
-            //   console.log('Setting bearing to ', bearing);
-            console.log('Map.update')
-
             map.current.setCenter([mlng, mlat]);
             map.current.setZoom(zoom);
             if (mapPitch) {
@@ -128,11 +113,6 @@ function Edit({attributes, setAttributes}) {
             }
             refreshMapData();
         } else {
-            console.log('Map.create');
-            // console.log('Setting Center to ', [lng, lat]);
-            // console.log('Setting zoom to ', zoom);
-            // console.log('Setting pitch to ', pitch);
-            // console.log('Setting bearing to ', bearing);
             // Initialize map if it doesn't exist
             map.current = new mapboxgl.Map({
                 container: mapContainer.current,
@@ -146,7 +126,6 @@ function Edit({attributes, setAttributes}) {
             map.current.on('load', () => {
                 refreshMapData();
             });
-
         }
 
     }, [mapCenter, locationCoords, mapZoom, mapPitch, mapBearing]);
@@ -172,17 +151,11 @@ function Edit({attributes, setAttributes}) {
 
     // Function to handle API call
     const fetchData = () => {
-        // Placeholder: Replace with actual API call logic
-        // Example: setAttributes({ weather: 'Sunny', temperature: '25' });
-        console.log('Fetching data...');
-        // Simulate setting attributes after fetching data
-
         // add start & end to the URL making sure they are encoded
         const apiUrl = `/geopath/location?start=${encodeURIComponent(start || '')}&end=${encodeURIComponent(end)}`;
 
         apiFetch( { path: apiUrl})
             .then(data => {
-                console.log('api response', data);
                 let newAttributes = {};
 
                 if (data.weather !== undefined) {
@@ -208,16 +181,6 @@ function Edit({attributes, setAttributes}) {
             .catch(error => {
                 console.error('There has been a problem with your fetch operation:', error);
             });
-        //
-        // setAttributes({
-        // 	weather: 'Sunny',
-        // 	weatherSlug: 'clear-day',
-        // 	temperature: '25',
-        // 	locationName: 'Central Park',
-        // 	locationCoords: '-73.9683, 40.785091',
-        // 	mapZoom: '12',
-        // 	geoJson: '{"type": "FeatureCollection", "features": []}', // Example empty GeoJSON
-        // });
     };
 
     return (
