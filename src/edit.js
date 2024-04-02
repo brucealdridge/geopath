@@ -13,6 +13,7 @@ import {
 import mapboxgl from '!mapbox-gl';
 import {useEffect, useRef} from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
+import {debounce} from 'lodash';
 
 function Edit({attributes, setAttributes}) {
     // Destructure attributes
@@ -126,6 +127,12 @@ function Edit({attributes, setAttributes}) {
             map.current.on('load', () => {
                 refreshMapData();
             });
+            map.current.on('moveend', () => {
+                // debounce the update to avoid too many updates
+                debounce(() => {
+                    updateAttributesBasedOnMap();
+                }, 200)();
+            });
         }
 
     }, [mapCenter, locationCoords, mapZoom, mapPitch, mapBearing]);
@@ -133,18 +140,24 @@ function Edit({attributes, setAttributes}) {
 
     const updateAttributesBasedOnMap = () => {
         if (map.current) {
-            const newLng = map.current.getCenter().lng.toFixed(4);
-            const newLat = map.current.getCenter().lat.toFixed(4);
+            const newMapCenter = map.current.getCenter().lng.toFixed(4)+', '+map.current.getCenter().lat.toFixed(4)
             const newZoom = map.current.getZoom().toFixed(2);
             const newPitch = map.current.getPitch().toFixed(2);
             const newBearing = map.current.getBearing().toFixed(2);
 
-            setAttributes({
-                mapCenter: `${newLng}, ${newLat}`,
-                mapZoom: newZoom,
-                mapPitch: newPitch,
-                mapBearing: newBearing,
-            });
+            if (
+                newMapCenter !== mapCenter
+                || newZoom !== mapZoom
+                || newPitch !== mapPitch
+                || newBearing !== mapBearing
+            ) {
+                setAttributes({
+                    mapCenter: newMapCenter,
+                    mapZoom: newZoom,
+                    mapPitch: newPitch,
+                    mapBearing: newBearing,
+                });
+            }s
         }
     }
 
@@ -234,10 +247,9 @@ function Edit({attributes, setAttributes}) {
                     />
                     <TextControl
                         label={__('Map Bearing', 'geopath')}
-                        value={mapPitch}
+                        value={mapBearing}
                         onChange={(value) => setAttributes({mapBearing: value})}
                     />
-                    <Button isPrimary onClick={updateAttributesBasedOnMap}>{__('Sync from map', 'geopath')}</Button>
                 </PanelBody>
                 <PanelBody title={__('Other Settings', 'geopath')} initialOpen={false}>
                     <TextControl
