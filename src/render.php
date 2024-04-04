@@ -55,7 +55,7 @@ if ( $geoJson ) {
 	$data['geojson'] = json_decode($geoJson);
 }
 
-wp_enqueue_script( 'my-mapbox-init', plugins_url( '/js/mapbox-init.js', __DIR__ ), array( 'mapbox-gl-js' ), '1.0.2', true );
+wp_enqueue_script( 'my-mapbox-init', plugins_url( '/js/mapbox-init.js', __DIR__ ), array( 'mapbox-gl-js' ), GeoPath::VERSION, true );
 wp_localize_script( 'my-mapbox-init', $map_id, $data );
 
 ?>

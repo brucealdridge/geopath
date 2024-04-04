@@ -11,7 +11,7 @@
  * Plugin Name:       GeoPath
  * Plugin URI:        https://github.com/brucealdridge/geopath
  * Description:       Adds geopath block type which grabs location data from Owntracks and display it on a map.
- * Version:           1.1.0
+ * Version:           1.2.0
  * Requires at least: 6.4
  * Requires PHP:      7.4
  * Author:            Bruce Aldridge
@@ -23,6 +23,7 @@
 
 class GeoPath {
 	public const META_PREFIX = '_geopath_';
+	const VERSION = '1.2.0';
 
 	private $icon_style = 'svg'; // either svg,svg-static or png
 	private $icon_format = '.svg'; // either .svg or .png

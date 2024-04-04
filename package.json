@@ -1,6 +1,6 @@
 {
 	"name": "geopath",
-	"version": "0.1.0",
+	"version": "1.2.0",
 	"description": "Display a map with a marker or a route",
 	"author": "bruce aldridge",
 	"license": "GPL-2.0-or-later",
